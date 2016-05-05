@@ -24,7 +24,7 @@ class SubsonicExtension(ext.Extension):
         schema['username'] = config.String()
         schema['password'] = config.Secret()
         schema['ssl'] = config.Boolean()
-        schema['context'] = config.String()
+        schema['context'] = config.String(optional=True)
         schema['legacy_auth'] = config.Boolean()
         return schema
 

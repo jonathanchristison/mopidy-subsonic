@@ -1,14 +1,15 @@
 #!/usr/local/bin/python
 # -*- coding: utf-8 -*-
 #
-from __future__ import unicode_literals
 
 import logging
 import libsonic
 import time
 import re
-from datetime import datetime
+import itertools
 
+from __future__ import unicode_literals
+from datetime import datetime
 from mopidy.models import Track, Album, Artist, Playlist
 
 logger = logging.getLogger(__name__)
@@ -102,6 +103,10 @@ class SubsonicRemoteClient(object):
     def __init__(self, hostname, port, username, password, ssl, context, legacy_auth):
         super(SubsonicRemoteClient, self).__init__()
 
+        self.albums = {}
+        self.tracks = {}
+        self.artists = {}
+
         if not (hostname and port and username and password):
             logger.error('Subsonic API settings are not fully defined: %s %s %s %s %s' % (hostname, port, username, password, ssl))
         else:
@@ -126,26 +131,89 @@ class SubsonicRemoteClient(object):
                 logger.error('Subsonic Authentication error: %s' % e)
                 exit()
 
-    @cache()
     def get_artists(self):
+        return self._get_artists().values()
+
+    def get_artist_albums(self, uri):
+        artists = self._get_artists()
+
+        if uri not in artists:
+            return None
+
+        # return album from cache
+        if uri in self.albums:
+            return self.albums[uri]
+
+        artist_id = uri.split(':')[2]
+        raw_albums = self.id_to_albums(artist_id)
+        albums = []
+        for album in raw_albums:
+            albums.append(self._make_album(album))
+
+        self.albums[uri] = albums
+
+        return albums
+
+    def get_album_tracks(self, uri):
+
+        if uri in self.tracks:
+            return self.tracks[uri]
+
+        album_id = uri.split(':')[2]
+        raw_tracks = self.id_to_dir(album_id)
+        tracks = []
+        for song in raw_tracks:
+            tracks.append(self._make_track(song))
+
+        self.tracks[uri] = tracks
+
+        return tracks
+
+    def _get_artists(self):
+        if self.artists:
+            return self.artists
+
         try:
             # get the artist indexes (segmented by a,b,c,...)
             indexes = unescapeobj(self.api.getIndexes().get('indexes').get('index'))
 
+<<<<<<< HEAD
             # for each index, get it's artists out, turn them into tracks, and return those tracks
             return [self.get_track(artist) for index in indexes for artist in makelist(index.get('artist'))]
+=======
+            # unpack the index into a list of artist lists grouped by
+            # alphabetical order.
+            artists_by_letter = [l.get('artist') for l in indexes]
+
+            # flatten the list of lists.
+            artists = list(itertools.chain.from_iterable(artists_by_letter))
+
+            # for each index, get it's artists out, turn them into tracks,
+            # and return those tracks
+            for artist in artists:
+                a = self._make_artist(artist)
+                self.artists[a.uri] = a
+
+            return self.artists
+>>>>>>> 4dbedd4... browse with no timeouts because better cache?
         except Exception as error:
             logger.debug('Failed in get_artists: %s' % error)
             return []
 
-    @cache()
-    def get_artist_id(self, artist_query):
-        artist_tracks = self.get_artists()
+    def get_artist_by_name(self, artist_name):
+        artists = self._get_artists()
 
+<<<<<<< HEAD
         for track in artist_tracks:
             artist = next(iter(track.artists)) #unpack the frozenset
             if (artist.name == artist_query):
                 return int(''.join(x for x in track.uri if x.isdigit())) # pull the id number from the URI
+=======
+        for artist in artists.values():
+            if (artist.name == artist_name):
+                # pull the id number from the URI
+                return artist
+>>>>>>> 4dbedd4... browse with no timeouts because better cache?
         return None
 
     @cache()
@@ -187,7 +255,7 @@ class SubsonicRemoteClient(object):
         if album_query:
             q_album  = next(iter(album_query))
 
-        artist_id = self.get_artist_id(q_artist)
+        artist_id = self.get_artist_by_name(q_artist)
         albums = makelist(self.id_to_albums(artist_id))
 
         tracks = []
@@ -229,12 +297,72 @@ class SubsonicRemoteClient(object):
         track = self._convert_data(data) 
         return track
 
-    @cache(ctl=16)
-    def _get_artist(self, data):
+    def _get_album_by_id(self, album_id):
+        uri = 'subsonic:album:' + album_id
+        for album in list(itertools.chain.from_iterable(self.albums.values())):
+            if uri == album.uri:
+                return album
+        return None
+
+    def _make_artist(self, data):
         uri = 'subsonic:artist:' + data['id']
         name = data.get('name', '')
         artist = Artist(uri=uri, name=name)
         return artist
+
+    def _make_album(self, data):
+        uri = 'subsonic:album:' + data['id']
+        name = data.get('title', '')
+        artists = []
+        if data.get('artist'):
+            artist = self.get_artist_by_name(data['artist'])
+            if artist is not None:
+                artists.append(artist)
+
+        if data.get('albumartist') and \
+           data.get('albumartist') != data.get('artist'):
+            album_artist = self.get_artist_by_name(data['albumartist'])
+
+            if album_artist is not None:
+                artists.append(album_artist)
+
+        # keeping with the convention of returning lower none if not present
+        date = str(data.get('year')).lower()
+        al = Album(uri=uri, name=name, artists=artists, date=date)
+        return al
+
+    def _make_track(self, data):
+        uri = 'subsonic://%s' % data['id']
+        name = data.get('title', '')
+        # keeping with the convention of returning lower none if not present
+        date = str(data.get('year')).lower()
+        genre = data.get('genre')
+
+        track_no = None
+        if data.get('track'):
+            track_no = int(data['track'])
+
+        disc_no = None
+        if data.get('discNumber'):
+            disc_no = int(data['discNumber'])
+
+        artists = []
+        if data.get('artist'):
+            artist = self.get_artist_by_name(data['artist'])
+            if artist is not None:
+                artists.append(artist)
+
+        length = int(data.get('duration', 0)) * 1000
+        bitrate = data.get('bitRate', 0)
+
+        album = None
+        if data.get('albumId'):
+            album = self._get_album_by_id(data['albumId'])
+
+        tr = Track(uri=uri, name=name, artists=artists, album=album,
+                   date=date, track_no=track_no, disc_no=disc_no, genre=genre,
+                   length=length, bitrate=bitrate)
+        return tr
 
     def _convert_data(self, data):
         if not data:

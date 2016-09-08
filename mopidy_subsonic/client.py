@@ -5,6 +5,7 @@ import libsonic
 import time
 import re
 import itertools
+import urllib
 
 from __future__ import unicode_literals
 from datetime import datetime
@@ -170,15 +171,11 @@ class SubsonicRemoteClient(object):
     def _get_artists(self):
         if self.artists:
             return self.artists
-
+			
         try:
             # get the artist indexes (segmented by a,b,c,...)
             indexes = unescapeobj(self.api.getIndexes().get('indexes').get('index'))
 
-<<<<<<< HEAD
-            # for each index, get it's artists out, turn them into tracks, and return those tracks
-            return [self.get_track(artist) for index in indexes for artist in makelist(index.get('artist'))]
-=======
             # unpack the index into a list of artist lists grouped by
             # alphabetical order.
             artists_by_letter = [l.get('artist') for l in indexes]
@@ -193,26 +190,20 @@ class SubsonicRemoteClient(object):
                 self.artists[a.uri] = a
 
             return self.artists
->>>>>>> 4dbedd4... browse with no timeouts because better cache?
-        except Exception as error:
+		
+		except Exception as error:
             logger.debug('Failed in get_artists: %s' % error)
             return []
 
     def get_artist_by_name(self, artist_name):
         artists = self._get_artists()
 
-<<<<<<< HEAD
-        for track in artist_tracks:
-            artist = next(iter(track.artists)) #unpack the frozenset
-            if (artist.name == artist_query):
-                return int(''.join(x for x in track.uri if x.isdigit())) # pull the id number from the URI
-=======
         for artist in artists.values():
             if (artist.name == artist_name):
                 # pull the id number from the URI
                 return artist
->>>>>>> 4dbedd4... browse with no timeouts because better cache?
-        return None
+
+		return None
 
     @cache()
     def id_to_dir(self, id):
@@ -421,13 +412,14 @@ class SubsonicRemoteClient(object):
         return track
 
     def build_url_from_song_id(self, id):
-        uri="%s:%d/%s/%s?id=%s&u=%s&p=%s&c=mopidy&v=1.8" % (self.api._baseUrl,
-                                                            self.api._port,
-                                                            self.api._serverPath,
-                                                            'stream.view',
-                                                            id,
-                                                            self.api._username,
-                                                            self.api._rawPass)
+        base_uri = '%s:%d/%s/%s?u=%s&p=%s&c=mopidy&v=1.14.0&id=%s'
+        uri = base_uri % (self.api._baseUrl,
+                          self.api._port,
+                          self.api._serverPath,
+                          'stream.view',
+                          urllib.quote_plus(self.api._username),
+                          urllib.quote_plus(self.api._rawPass),
+						  urllib.quote_plus(id))
         return uri
 
     def search_artist(self, artist):
@@ -491,13 +483,6 @@ class SubsonicRemoteClient(object):
 
         return final_list
 
-    # MPD doesn't like /, \n, or \r in names
-    # should only necessary until next release of mopidy
-    def fix_playlist_name(self, name):
-        _invalid_playlist_chars = re.compile(r'[\n\r/]') 
-        fixed_name = _invalid_playlist_chars.sub('-', name)
-        return fixed_name 
-
     def get_user_playlists(self):
         results = self.api.getPlaylists().get('playlists')
         if results is u'':
@@ -505,14 +490,14 @@ class SubsonicRemoteClient(object):
         else:
             results = makelist(unescapeobj(self.api.getPlaylists().get('playlists').get('playlist')))
             return [Playlist(uri=u'subsonic://%s' % playlist.get('id'),
-                         name='User Playlist: %s' % self.fix_playlist_name(playlist.get('name')))
+                         name='User Playlist: %s' % playlist.get('name'))
                          for playlist in results if playlist is not None]
 
     def playlist_id_to_playlist(self, id):
         playlist = unescapeobj(self.api.getPlaylist(id).get('playlist'))
         songs = playlist.get('entry')
         return Playlist(uri=u'subsonic://%s' % playlist.get('id'),
-                        name='User Playlist: %s' % self.fix_playlist_name(playlist.get('name')),
+                        name='User Playlist: %s' % playlist.get('name'),
                         tracks=[self.get_track(song) for song in makelist(songs)])
 
     def get_smart_playlist(self, type):

@@ -37,6 +37,6 @@ class SubsonicPlaybackProvider(backend.PlaybackProvider):
 
     def translate_uri(self, uri):
         logger.debug('Getting info for track %s' % uri)
-        id = uri.split('subsonic://')[1]
+        id = uri.split('subsonic:song:')[1]
         real_uri = self.backend.remote.build_url_from_song_id(id)
         return real_uri

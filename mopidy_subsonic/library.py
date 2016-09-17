@@ -62,7 +62,7 @@ class SubsonicLibraryProvider(backend.LibraryProvider):
 
     def lookup(self, uri):
         try:
-            song_id = uri.split("subsonic://")[1]
+            song_id = uri.split("subsonic:")[1]
             track = self.remote.get_song(song_id)
             return [track]
         except Exception as error:

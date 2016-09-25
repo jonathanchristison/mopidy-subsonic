@@ -25,6 +25,7 @@ class SubsonicExtension(ext.Extension):
         schema['password'] = config.Secret()
         schema['ssl'] = config.Boolean()
         schema['context'] = config.String()
+        schema['legacy_auth'] = config.Boolean()
         return schema
 
     def setup(self, registry):

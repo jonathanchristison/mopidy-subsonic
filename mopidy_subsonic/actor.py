@@ -24,7 +24,8 @@ class SubsonicBackend(pykka.ThreadingActor, backend.Backend):
             config['subsonic']['username'],
             config['subsonic']['password'],
             config['subsonic']['ssl'],
-            config['subsonic']['context'])
+            config['subsonic']['context'],
+            config['subsonic']['legacy_auth'])
 
         self.config = config
         self.library = SubsonicLibraryProvider(backend=self)

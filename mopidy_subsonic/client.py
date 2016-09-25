@@ -99,7 +99,7 @@ class cache(object):
 
 class SubsonicRemoteClient(object):
 
-    def __init__(self, hostname, port, username, password, ssl, context):
+    def __init__(self, hostname, port, username, password, ssl, context, legacy_auth):
         super(SubsonicRemoteClient, self).__init__()
 
         if not (hostname and port and username and password):
@@ -118,7 +118,7 @@ class SubsonicRemoteClient(object):
             else:
                 self.api_context = "/rest"
 
-            self.api = libsonic.Connection(self.api_hostname, self.api_user, self.api_pass, port=int(self.api_port), serverPath=self.api_context)
+            self.api = libsonic.Connection(self.api_hostname, self.api_user, self.api_pass, port=int(self.api_port), serverPath=self.api_context, legacyAuth=legacy_auth)
             logger.info('Connecting to Subsonic library %s:%s as user %s', self.api_hostname, self.api_port, self.api_user)
             try:
                 self.api.ping()

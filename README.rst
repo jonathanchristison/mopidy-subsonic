@@ -39,6 +39,7 @@ following to your Mopidy configuration::
     password = PASS
     ssl = (yes/no)
     context = my-subsonic (if your subsonic is accessible on http://some.website.com:8888/my-subsonic/index.view)
+    legacy_auth = (yes/no. optional, default is no. Setting to yes uses legacy auth, which may fix auth errors when connecting to subsonic-compatible APIs)
 
 Searches in Mopidy will now return results from your Subsonic library.
 

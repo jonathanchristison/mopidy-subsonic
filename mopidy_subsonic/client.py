@@ -1,6 +1,4 @@
-#!/usr/local/bin/python
-# -*- coding: utf-8 -*-
-#
+#!/usr/bin/env python2
 
 import logging
 import libsonic

@@ -1,17 +1,15 @@
-from __future__ import unicode_literals
+#!/usr/bin/env python2
 
 import logging
 import pykka
 
 from mopidy import backend
-
+from __future__ import unicode_literals
 from .library import SubsonicLibraryProvider
 from .playlist import SubsonicPlaylistsProvider
 from .client import SubsonicRemoteClient
 
-
 logger = logging.getLogger(__name__)
-
 
 class SubsonicBackend(pykka.ThreadingActor, backend.Backend):
 

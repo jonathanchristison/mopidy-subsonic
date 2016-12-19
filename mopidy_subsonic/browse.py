@@ -1,5 +1,8 @@
-from __future__ import unicode_literals
+#!/usr/bin/env python2
+
 import logging
+
+from __future__ import unicode_literals
 from mopidy import models
 
 logger = logging.getLogger(__name__)

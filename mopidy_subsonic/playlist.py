@@ -1,12 +1,13 @@
-from __future__ import unicode_literals
+
+#!/usr/bin/env python2
 
 import logging
 
+from __future__ import unicode_literals
 from mopidy import backend
 from mopidy.models import Playlist
 
 logger = logging.getLogger(__name__)
-
 
 class SubsonicPlaylistsProvider(backend.PlaylistsProvider):
     def __init__(self, *args, **kwargs):

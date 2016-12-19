@@ -1,7 +1,8 @@
-from __future__ import unicode_literals
+#!/usr/bin/env python2
 
 import logging
 
+from __future__ import unicode_literals
 from mopidy import backend
 from mopidy.models import SearchResult
 from mopidy_subsonic import browse

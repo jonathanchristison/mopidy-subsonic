@@ -25,7 +25,7 @@ setup(
         'setuptools',
         'Mopidy >= 1.0',
         'Pykka >= 1.1',
-        'py-sonic',
+        'py-sonic == 0.6.2',
     ],
     entry_points={
         b'mopidy.ext': [
